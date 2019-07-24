@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
+const exec = require('child_process').exec;
 const app = express();
 const server = http.createServer(app);
 
@@ -15,16 +14,30 @@ app.use(function (req, res, next) {
 process.on('uncaughtException', function (err) {
     log.error('未知异常', err)
 });
-let options = `ffmpeg -f avfoundation -framerate 30 -video_size 1280x720 -i "0:0" \
+let option1 = `ffmpeg -f avfoundation -framerate 30 -video_size 1280x720 -i "0:0" \
 -codec:v mpeg1video -s 640x360 -r 30 -b:v 1500k -bf 0 \
 -codec:a mp2 -b:a 128k -f mpegts http://127.0.0.1:8081/stream`
-
-app.get('/', async function(req, res) {
-    if(req.query){
-        let result = await ffmpegStreamStart(options);
-        res.send(JSON.stringify(result));
+//音视频聊天
+let option2 = `ffmpeg -f avfoundation -framerate 30 -video_size 1280x720 -i "1:0" \
+-codec:v mpeg1video -s 640x360 -r 30 -b:v 1500k -bf 0 \
+-codec:a mp2 -b:a 128k -f mpegts http://127.0.0.1:8081/stream`
+//录屏及录音聊天
+let childProcess;
+app.get('/', function(req, res) {
+    if(req.query.run==='1'&&!childProcess){
+        ffmpegStreamStart(option1);
+        res.send(JSON.stringify({status: 'running'}));
+    } else if(req.query.run==='2'&&!childProcess){
+        ffmpegStreamStart(option2);
+        res.send(JSON.stringify({status: 'running'}));
     } else{
-        
+        if(childProcess){
+            childProcess.kill();
+            childProcess = undefined;
+            res.send(JSON.stringify({status: 'stoped'}));
+            return;
+        }
+        res.send(JSON.stringify({status: 'break'}));
     }
     return 0;
 })
@@ -39,18 +52,8 @@ console.log(
   `Server is listening on http://${process.env.HOST}:${process.env.PORT}`
 )
 
-async function ffmpegStreamStart(options){
-    try{
-        const {
-            error,
-            stdout,
-            stderr
-        } = await exec(options);
-        if (!error && !stderr && stdout){
-            return true;
-        }
-        return false;
-    } catch(error){
-        return false;
-    }
+function ffmpegStreamStart(option){
+    childProcess = exec(option , function(err, stdout,stderr){
+        console.log('error is ',err,'\nstdout is ',stdout,'\n stderr is ',stderr);
+    });
 }
