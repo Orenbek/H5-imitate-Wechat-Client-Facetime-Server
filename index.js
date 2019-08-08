@@ -3,7 +3,19 @@ const http = require('http');
 const exec = require('child_process').exec;
 const app = express();
 const server = http.createServer(app);
+const FSServerURL = 'http://127.0.0.1:8001/'
+const option1 = `ffmpeg -f avfoundation -framerate 30 -video_size 1280x720 -i "0:none" \
+-codec:v mpeg1video -s 640x360 -r 30 -b:v 1500k -bf 0 -muxdelay 0.001 \
+-f mpegts ${FSServerURL}`
+//视频聊天
 
+const option2 = `ffmpeg -f avfoundation -framerate 30 -video_size 1280x720 -i "1:0" \
+-codec:v mpeg1video -s 640x360 -r 30 -b:v 1500k -bf 0 \
+-codec:a mp2 -b:a 128k -f mpegts ${FSServerURL}`
+//录屏及录音聊天
+const soption = `ffmpeg -f avfoundation -i "none:0" \
+-codec:a mp2 -b:a 128k -muxdelay 0.001 -f mpegts ${FSServerURL}`
+//音频跟视频一起录制 音频出现较大的延迟，因此决定使用双线程分别采集音频和视频数据。效果相当明显。
 
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -14,18 +26,6 @@ app.use(function (req, res, next) {
 process.on('uncaughtException', function (err) {
     log.error('未知异常', err)
 });
-const option1 = `ffmpeg -f avfoundation -framerate 30 -video_size 1280x720 -i "0:none" \
--codec:v mpeg1video -s 640x360 -r 30 -b:v 1500k -bf 0 -muxdelay 0.001 \
--f mpegts http://127.0.0.1:8081/stream`
-//视频聊天
-// ffmpeg -f avfoundation "none:0" -codec:a mp2 -b:a 128k -muxdelay 0.001 -f mpegts http://127.0.0.1:8081/stream
-const option2 = `ffmpeg -f avfoundation -framerate 30 -video_size 1280x720 -i "1:0" \
--codec:v mpeg1video -s 640x360 -r 30 -b:v 1500k -bf 0 \
--codec:a mp2 -b:a 128k -f mpegts http://127.0.0.1:8081/stream`
-//录屏及录音聊天
-const soption = `ffmpeg -f avfoundation -i "none:0" \
--codec:a mp2 -b:a 128k -muxdelay 0.001 -f mpegts http://127.0.0.1:8081/stream`
-//音频跟视频一起录制 音频出现较大的延迟，因此决定使用双线程分别采集音频和视频数据。效果相当明显。
 let childProcess1,childProcess2;
 app.get('/', function(req, res) {
     if(req.query.run==='1'&&!childProcess1&&!childProcess2){
@@ -37,7 +37,7 @@ app.get('/', function(req, res) {
     } else{
         if(childProcess1||childProcess2){
             childProcess1.kill();
-            childProcess2.kill();
+            // childProcess2.kill();
             childProcess1 = undefined;
             childProcess2 = undefined;
             res.send(JSON.stringify({status: 'stoped'}));
@@ -62,7 +62,7 @@ function ffmpegStreamStart(option,soption){
     childProcess1 = exec(option , function(err, stdout,stderr){
         console.log('error is ',err,'\nstdout is ',stdout,'\n stderr is ',stderr);
     });
-    childProcess2 = exec(soption , function(err, stdout,stderr){
-        console.log('error is ',err,'\nstdout is ',stdout,'\n stderr is ',stderr);
-    });
+    // childProcess2 = exec(soption , function(err, stdout,stderr){
+    //     console.log('error is ',err,'\nstdout is ',stdout,'\n stderr is ',stderr);
+    // });
 }
