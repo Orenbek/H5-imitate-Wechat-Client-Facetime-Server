@@ -58,11 +58,11 @@ console.log(
   `Server is listening on http://${process.env.HOST}:${process.env.PORT}`
 )
 
-function ffmpegStreamStart(option,soption){
-    childProcess1 = exec(option , function(err, stdout,stderr){
+function ffmpegStreamStart(voption,soption){
+    childProcess1 = exec(voption , function(err, stdout,stderr){
         console.log('error is ',err,'\nstdout is ',stdout,'\n stderr is ',stderr);
     });
-    // childProcess2 = exec(soption , function(err, stdout,stderr){
-    //     console.log('error is ',err,'\nstdout is ',stdout,'\n stderr is ',stderr);
-    // });
+    childProcess2 = exec(soption , function(err, stdout,stderr){
+        console.log('error is ',err,'\nstdout is ',stdout,'\n stderr is ',stderr);
+    });
 }
